@@ -1,14 +1,12 @@
 // ══════════════════════════════════════════
 //  Claude Chat — app.js
-//  Requiere: Puter.js (cargado en ia.html)
-//            Marked.js (cargado en ia.html)
 // ══════════════════════════════════════════
 
 // ── ESTADO
-let convs        = [];
-let currentId    = null;
-let currentModel = 'claude-sonnet-4-6';
-let isGenerating = false;
+let convs         = [];
+let currentId     = null;
+let currentModel  = 'claude-sonnet-4-6';
+let isGenerating  = false;
 let stopRequested = false;
 
 // ── UTILIDADES
@@ -17,7 +15,7 @@ const esc  = s  => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 const save = ()  => { try { localStorage.setItem('puter_convs', JSON.stringify(convs)); } catch(e) {} };
 const load = ()  => { try { const r = localStorage.getItem('puter_convs'); if (r) convs = JSON.parse(r); } catch(e) { convs = []; } };
 
-// ── CONFIGURAR MARKED (Markdown → HTML)
+// ── CONFIGURAR MARKED
 const renderer = new marked.Renderer();
 renderer.code = (code, lang) => {
   const id  = 'c' + uid();
@@ -43,32 +41,27 @@ const themeBtn  = document.getElementById('themeBtn');
 const iconMoon  = document.getElementById('iconMoon');
 const iconSun   = document.getElementById('iconSun');
 
-// ── DARK MODE TOGGLE
+// ── DARK MODE
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   try { localStorage.setItem('theme', theme); } catch(e) {}
   if (theme === 'dark') {
     iconMoon.style.display = 'none';
     iconSun.style.display  = 'block';
-    themeBtn.setAttribute('aria-label', 'Cambiar a modo claro');
     themeBtn.title = 'Cambiar a modo claro';
   } else {
     iconMoon.style.display = 'block';
     iconSun.style.display  = 'none';
-    themeBtn.setAttribute('aria-label', 'Cambiar a modo oscuro');
     themeBtn.title = 'Cambiar a modo oscuro';
   }
 }
-
-// Inicializar tema guardado
 (function(){
   const saved = localStorage.getItem('theme') || 'light';
   applyTheme(saved);
 })();
-
 themeBtn.addEventListener('click', () => {
-  const current = document.documentElement.getAttribute('data-theme') || 'light';
-  applyTheme(current === 'dark' ? 'light' : 'dark');
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
 });
 
 // ── TEXTAREA AUTO-HEIGHT
@@ -105,6 +98,64 @@ document.getElementById('sidebarToggle').addEventListener('click', () =>
   document.getElementById('sidebar').classList.toggle('open')
 );
 
+// ── MODAL CONFIRMACIÓN BORRAR ──────────────────────────
+function confirmDelete(id, title) {
+  // Quitar modal previo si existe
+  const prev = document.getElementById('deleteModal');
+  if (prev) prev.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'deleteModal';
+
+  overlay.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      </div>
+      <h3 id="modalTitle">¿Borrar conversación?</h3>
+      <p>Se eliminará <span class="modal-title-preview">"${esc(title.slice(0, 50))}${title.length > 50 ? '…' : ''}"</span> y no podrás recuperarla.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="modalCancel">Cancelar</button>
+        <button class="btn-delete" id="modalConfirm">Borrar</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  // Foco en el botón cancelar por defecto
+  setTimeout(() => document.getElementById('modalCancel').focus(), 50);
+
+  // Cerrar al hacer clic en el fondo
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.remove();
+  });
+  // Cerrar con Escape
+  document.addEventListener('keydown', function onKey(e) {
+    if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onKey); }
+  });
+
+  document.getElementById('modalCancel').addEventListener('click', () => overlay.remove());
+  document.getElementById('modalConfirm').addEventListener('click', () => {
+    overlay.remove();
+    doDelete(id);
+  });
+}
+
+function doDelete(id) {
+  convs = convs.filter(c => c.id !== id);
+  if (currentId === id) currentId = null;
+  save();
+  renderSidebar();
+  renderChat();
+}
+// ───────────────────────────────────────────────────────
+
 // ── NUEVA CONVERSACIÓN
 function newChat() {
   const c = {
@@ -132,7 +183,19 @@ function renderSidebar() {
   convList.innerHTML = convs.map(c => `
     <div class="conv-item${c.id === currentId ? ' active' : ''}" onclick="loadConv('${c.id}')">
       <div class="conv-title">${esc(c.title)}</div>
-      <button class="conv-del" onclick="delConv('${c.id}', event)">✕</button>
+      <button
+        class="conv-del"
+        title="Borrar conversación"
+        aria-label="Borrar conversación"
+        onclick="event.stopPropagation(); confirmDelete('${c.id}', '${c.title.replace(/'/g, "\\'")}')"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      </button>
     </div>`).join('');
 }
 
@@ -141,14 +204,6 @@ function loadConv(id) {
   renderSidebar();
   renderChat();
   document.getElementById('sidebar').classList.remove('open');
-}
-function delConv(id, e) {
-  e.stopPropagation();
-  convs = convs.filter(c => c.id !== id);
-  if (currentId === id) currentId = null;
-  save();
-  renderSidebar();
-  renderChat();
 }
 
 // ── CHIP DE SUGERENCIA
@@ -225,7 +280,7 @@ function appendMsg(role, content, streaming) {
   return grp;
 }
 
-// ── COPIAR CÓDIGO DE BLOQUE
+// ── COPIAR CÓDIGO
 window.cpCode = id => {
   const el = document.getElementById(id);
   if (!el) return;
@@ -235,7 +290,7 @@ window.cpCode = id => {
   });
 };
 
-// ── COPIAR MENSAJE COMPLETO
+// ── COPIAR MENSAJE
 window.cpMsg = btn => {
   const cnt = btn.closest('.msg-group').querySelector('.msg-content');
   navigator.clipboard.writeText(cnt.innerText).then(() => {
@@ -271,8 +326,8 @@ async function sendMsg() {
   input.value = '';
   input.style.height = 'auto';
   sendBtn.disabled = true;
-  isGenerating    = true;
-  stopRequested   = false;
+  isGenerating     = true;
+  stopRequested    = false;
 
   const streamGrp = appendMsg('assistant', '', true);
   const streamCnt = document.getElementById('stream-cnt');
@@ -283,21 +338,15 @@ async function sendMsg() {
   try {
     const history = conv.msgs.map(m => ({ role: m.role, content: m.content }));
     const res = await puter.ai.chat(history, { model: currentModel, stream: true });
-
     if (streamCnt) streamCnt.innerHTML = '';
-
     for await (const part of res) {
       if (stopRequested) break;
       const delta = part?.text ?? part?.delta?.text ?? '';
       if (delta) {
         full += delta;
-        if (streamCnt) {
-          streamCnt.innerHTML = marked.parse(full);
-          scrollBottom();
-        }
+        if (streamCnt) { streamCnt.innerHTML = marked.parse(full); scrollBottom(); }
       }
     }
-
   } catch (err) {
     full = `⚠️ **Error al conectar con Puter.js / Claude.**\n\nAsegúrate de:\n1. Estar logueado en [puter.com](https://puter.com)\n2. Tener conexión a internet\n\n*Error:* \`${esc(String(err.message || err))}\``;
     if (streamCnt) streamCnt.innerHTML = marked.parse(full);
@@ -305,7 +354,6 @@ async function sendMsg() {
     streamGrp.removeAttribute('id');
     const sc = streamGrp.querySelector('[id="stream-cnt"]');
     if (sc) sc.removeAttribute('id');
-
     const act = document.createElement('div');
     act.className = 'msg-actions';
     act.innerHTML = `<button class="action-btn" onclick="cpMsg(this)">
@@ -316,10 +364,8 @@ async function sendMsg() {
       Copiar
     </button>`;
     streamGrp.appendChild(act);
-
     conv.msgs.push({ role: 'assistant', content: full });
     save();
-
     isGenerating  = false;
     stopRequested = false;
     stopBtn.classList.remove('active');
@@ -328,14 +374,12 @@ async function sendMsg() {
   }
 }
 
-// ── EXPORTAR CHAT COMO .TXT
+// ── EXPORTAR .TXT
 function exportChat() {
   if (!currentId) return;
   const conv = convs.find(c => c.id === currentId);
   if (!conv || !conv.msgs.length) return alert('No hay mensajes para exportar.');
-  const txt = conv.msgs
-    .map(m => `[${m.role.toUpperCase()}]\n${m.content}`)
-    .join('\n\n---\n\n');
+  const txt = conv.msgs.map(m => `[${m.role.toUpperCase()}]\n${m.content}`).join('\n\n---\n\n');
   const a  = document.createElement('a');
   a.href   = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
   a.download = (conv.title || 'chat').replace(/[^a-z0-9áéíóúñ ]/gi, '_').slice(0, 40) + '.txt';
