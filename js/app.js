@@ -39,6 +39,37 @@ const convList  = document.getElementById('convList');
 const modelBtn  = document.getElementById('modelBtn');
 const modelDd   = document.getElementById('modelDropdown');
 const modelLbl  = document.getElementById('modelLabel');
+const themeBtn  = document.getElementById('themeBtn');
+const iconMoon  = document.getElementById('iconMoon');
+const iconSun   = document.getElementById('iconSun');
+
+// ── DARK MODE TOGGLE
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  try { localStorage.setItem('theme', theme); } catch(e) {}
+  if (theme === 'dark') {
+    iconMoon.style.display = 'none';
+    iconSun.style.display  = 'block';
+    themeBtn.setAttribute('aria-label', 'Cambiar a modo claro');
+    themeBtn.title = 'Cambiar a modo claro';
+  } else {
+    iconMoon.style.display = 'block';
+    iconSun.style.display  = 'none';
+    themeBtn.setAttribute('aria-label', 'Cambiar a modo oscuro');
+    themeBtn.title = 'Cambiar a modo oscuro';
+  }
+}
+
+// Inicializar tema guardado
+(function(){
+  const saved = localStorage.getItem('theme') || 'light';
+  applyTheme(saved);
+})();
+
+themeBtn.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
 
 // ── TEXTAREA AUTO-HEIGHT
 input.addEventListener('input', () => {
@@ -229,7 +260,6 @@ async function sendMsg() {
   const conv = convs.find(c => c.id === currentId);
   if (!conv) return;
 
-  // Guardar mensaje del usuario
   conv.msgs.push({ role: 'user', content: text });
   if (conv.title === 'Nueva conversación') {
     conv.title = text.slice(0, 52) + (text.length > 52 ? '…' : '');
@@ -251,10 +281,7 @@ async function sendMsg() {
   let full = '';
 
   try {
-    // Enviar historial completo para mantener contexto
     const history = conv.msgs.map(m => ({ role: m.role, content: m.content }));
-
-    // ── LLAMADA A PUTER.JS / CLAUDE ──
     const res = await puter.ai.chat(history, { model: currentModel, stream: true });
 
     if (streamCnt) streamCnt.innerHTML = '';
@@ -272,15 +299,13 @@ async function sendMsg() {
     }
 
   } catch (err) {
-    full = `⚠️ **Error al conectar con Puter.js / Claude.**\\n\\nAsegúrate de:\\n1. Estar logueado en [puter.com](https://puter.com)\\n2. Tener conexión a internet\\n\\n*Error:* \\`${esc(String(err.message || err))}\\``;
+    full = `⚠️ **Error al conectar con Puter.js / Claude.**\n\nAsegúrate de:\n1. Estar logueado en [puter.com](https://puter.com)\n2. Tener conexión a internet\n\n*Error:* \`${esc(String(err.message || err))}\``;
     if (streamCnt) streamCnt.innerHTML = marked.parse(full);
   } finally {
-    // Limpiar IDs de streaming
     streamGrp.removeAttribute('id');
     const sc = streamGrp.querySelector('[id="stream-cnt"]');
     if (sc) sc.removeAttribute('id');
 
-    // Agregar botón copiar
     const act = document.createElement('div');
     act.className = 'msg-actions';
     act.innerHTML = `<button class="action-btn" onclick="cpMsg(this)">
@@ -292,7 +317,6 @@ async function sendMsg() {
     </button>`;
     streamGrp.appendChild(act);
 
-    // Guardar respuesta de la IA
     conv.msgs.push({ role: 'assistant', content: full });
     save();
 
@@ -310,8 +334,8 @@ function exportChat() {
   const conv = convs.find(c => c.id === currentId);
   if (!conv || !conv.msgs.length) return alert('No hay mensajes para exportar.');
   const txt = conv.msgs
-    .map(m => `[${ m.role.toUpperCase() }]\\n${ m.content }`)
-    .join('\\n\\n---\\n\\n');
+    .map(m => `[${m.role.toUpperCase()}]\n${m.content}`)
+    .join('\n\n---\n\n');
   const a  = document.createElement('a');
   a.href   = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
   a.download = (conv.title || 'chat').replace(/[^a-z0-9áéíóúñ ]/gi, '_').slice(0, 40) + '.txt';
