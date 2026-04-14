@@ -101,6 +101,9 @@
           </button>
 
           <div class="model-dropdown" id="modelDropdown">
+
+            <!-- ── Anthropic ── -->
+            <div class="model-group-label">Anthropic</div>
             <div class="model-item sel" data-m="claude-sonnet-4-6">
               <div class="model-item-name">Claude Sonnet 4.6</div>
               <div class="model-item-desc">Rápido e inteligente · ideal para código</div>
@@ -117,14 +120,87 @@
               <div class="model-item-name">Claude 3.5 Sonnet</div>
               <div class="model-item-desc">Gran balance velocidad/calidad</div>
             </div>
+
+            <div class="model-divider"></div>
+
+            <!-- ── OpenAI ── -->
+            <div class="model-group-label">OpenAI</div>
             <div class="model-item" data-m="gpt-4o">
               <div class="model-item-name">GPT-4o</div>
-              <div class="model-item-desc">OpenAI vía Puter.js</div>
+              <div class="model-item-desc">Multimodal · visión y texto</div>
             </div>
+            <div class="model-item" data-m="gpt-4o-mini">
+              <div class="model-item-name">GPT-4o mini</div>
+              <div class="model-item-desc">Rápido y económico</div>
+            </div>
+            <div class="model-item" data-m="o3-mini">
+              <div class="model-item-name">o3-mini</div>
+              <div class="model-item-desc">Razonamiento avanzado · matemáticas</div>
+            </div>
+            <div class="model-item" data-m="gpt-5-nano">
+              <div class="model-item-name">GPT-5 Nano</div>
+              <div class="model-item-desc">Ultra ligero · respuestas rápidas</div>
+            </div>
+
+            <div class="model-divider"></div>
+
+            <!-- ── Google ── -->
+            <div class="model-group-label">Google</div>
             <div class="model-item" data-m="gemini-2.0-flash">
               <div class="model-item-name">Gemini 2.0 Flash</div>
-              <div class="model-item-desc">Google DeepMind vía Puter.js</div>
+              <div class="model-item-desc">Google DeepMind · muy rápido</div>
             </div>
+            <div class="model-item" data-m="google/gemini-flash">
+              <div class="model-item-name">Gemini Flash</div>
+              <div class="model-item-desc">Eficiente · bajo costo</div>
+            </div>
+            <div class="model-item" data-m="google/gemma-4-31b">
+              <div class="model-item-name">Gemma 4 31B</div>
+              <div class="model-item-desc">Open source · modelo propio Google</div>
+            </div>
+
+            <div class="model-divider"></div>
+
+            <!-- ── xAI / Meta / DeepSeek ── -->
+            <div class="model-group-label">xAI · Meta · DeepSeek</div>
+            <div class="model-item" data-m="grok-beta">
+              <div class="model-item-name">Grok (xAI)</div>
+              <div class="model-item-desc">Modelo de Elon Musk · acceso a X</div>
+            </div>
+            <div class="model-item" data-m="deepseek-chat">
+              <div class="model-item-name">DeepSeek Chat</div>
+              <div class="model-item-desc">Conversación fluida y técnica</div>
+            </div>
+            <div class="model-item" data-m="deepseek-reasoner">
+              <div class="model-item-name">DeepSeek Reasoner</div>
+              <div class="model-item-desc">Cadena de pensamiento · lógica</div>
+            </div>
+            <div class="model-item" data-m="meta-llama/llama-3">
+              <div class="model-item-name">Llama 3 (Meta)</div>
+              <div class="model-item-desc">Open source · gran versatilidad</div>
+            </div>
+
+            <div class="model-divider"></div>
+
+            <!-- ── Otros ── -->
+            <div class="model-group-label">Otros</div>
+            <div class="model-item" data-m="mistral-large">
+              <div class="model-item-name">Mistral Large</div>
+              <div class="model-item-desc">Europeo · eficiente en código</div>
+            </div>
+            <div class="model-item" data-m="moonshotai/kimi-k2.5">
+              <div class="model-item-name">Kimi K2.5</div>
+              <div class="model-item-desc">Moonshot AI · contexto largo</div>
+            </div>
+            <div class="model-item" data-m="qwen-plus">
+              <div class="model-item-name">Qwen 3.5 Plus</div>
+              <div class="model-item-desc">Alibaba · multilingüe</div>
+            </div>
+            <div class="model-item" data-m="z-ai/glm-5.1">
+              <div class="model-item-name">GLM 5.1 (Z.AI)</div>
+              <div class="model-item-desc">Zhipu AI · análisis complejo</div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -132,11 +208,9 @@
       <div class="topbar-right">
         <!-- BOTÓN DARK MODE -->
         <button class="theme-btn" id="themeBtn" title="Cambiar tema" aria-label="Cambiar a modo oscuro">
-          <!-- Icono luna (dark) -->
           <svg id="iconMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
           </svg>
-          <!-- Icono sol (light) - oculto por defecto -->
           <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none">
             <circle cx="12" cy="12" r="5"/>
             <line x1="12" y1="1" x2="12" y2="3"/>
